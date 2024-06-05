@@ -675,7 +675,7 @@ class button():
         self.surface.blit(alpha_surface_b, target_rect_b)
         
         
-#%% FUNCTIONS FOR GAME CODE
+#%% FUNCTIONS FOR GAME
 def graphs():
     """
     Finds the coordinates of the vertices of both valid regions for the pygame 
