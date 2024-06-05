@@ -18,23 +18,17 @@ import matplotlib.pyplot as plt
 from matplotlib import path as mpath
 import pygame
 import random
+import os
 
 #%% GLOBALS
-SCREEN_SIZE = 800 #screen height and width
-W = SCREEN_SIZE 
-H = SCREEN_SIZE 
-
 # Define the colours of the game
 BUTTON_COL = (255,0,0) 
 BUTTON_FLASH_COL = (0,255,0)
 BUTTON_HOVER_COL = (0,0,255)
 NO_VALID_REGION_COL = (135,206,235)
 
-DPI = 200
-FIGSIZE = (10,10)
-
 # Set working directory
-WDR = '/Users/marleymoore/Desktop/Jobs/MATHS_GAMES/INEQUALITIES'
+WDR = os.path.dirname(os.path.realpath('inequalities.py'))
 
 #%% GRAPHING
 def generator(lower, upper):
@@ -66,10 +60,18 @@ def random_inequality():
         Decides whether less than or greater than. 0 is <, 1 is >.
     """
     coefficients_array = []
-    for n in range(3):
+    for n in range(1):
         number = generator(-10, 10)
         coefficients_array.append(next(number))
     
+    for n in range(1):
+        number = generator(0, 10)
+        coefficients_array.append(next(number))
+        
+    for n in range(1):
+        number = generator(-10, 10)
+        coefficients_array.append(next(number))
+
     #we never want to produce an inequality with zero dimensions
     if coefficients_array[0] == 0 and coefficients_array[1] == 0:
         coefficients_array[0] = 1
@@ -143,7 +145,7 @@ def inequality_text(coefficients, sign):
             if c == 0:
                 text = 'y < 0'
             else:
-                text = 'y < {0:.1g}'.format(c/b)
+                text = '{}y < {}'.format(b,c)
         
         else:
             if b == 0:
@@ -151,7 +153,10 @@ def inequality_text(coefficients, sign):
                 if c == 0:
                     text = 'x < 0'
                 else:
-                    text = 'x < {0:.1g}'.format(c/a)
+                    if a<0:
+                        text = '{}x > {}'.format(a,c)
+                    else:
+                        text = '{}x < {}'.format(a,c)
             
             else:
                 if c == 0:
@@ -169,7 +174,7 @@ def inequality_text(coefficients, sign):
             if c == 0:
                 text = 'y > 0'
             else:
-                text = 'y > {0:.1g}'.format(c/b)
+                text = '{}y > {}'.format(b,c)
         
         else:
             if b == 0:
@@ -177,7 +182,10 @@ def inequality_text(coefficients, sign):
                 if c == 0:
                     text = 'x > 0'
                 else:
-                    text = 'x > {0:.1g}'.format(c/a)
+                    if a<0:
+                        text = '{}x < {}'.format(a,c)
+                    else:
+                        text = '{}x > {}'.format(a,c)
             
             else:
                 if c == 0:
@@ -577,7 +585,7 @@ class button():
         #update the colours to RGB-A
         # button_colour_alpha = BUTTON_COL + (50,)
         flash_colour_alpha = BUTTON_FLASH_COL + (50,)
-        hover_colour_alpha = BUTTON_HOVER_COL + (50,)
+        # hover_colour_alpha = BUTTON_HOVER_COL + (50,)
         
         alpha_surface = pygame.Surface(pygame.Rect(coordinates_rect).size, pygame.SRCALPHA)
         
@@ -616,7 +624,7 @@ class button():
         #update the colours to RGB-A
         button_colour_alpha = BUTTON_COL + (50,)
         flash_colour_alpha = BUTTON_FLASH_COL + (50,)
-        hover_colour_alpha = BUTTON_HOVER_COL + (50,)
+        # hover_colour_alpha = BUTTON_HOVER_COL + (50,)
         
         alx, aly = zip(*coordinates_a)
         amin_x, amin_y, amax_x, amax_y = min(alx), min(aly), max(alx), max(aly)
@@ -757,9 +765,15 @@ def draw_no_valid_region_rect(surface, coordinates_rect):
     
 
 #%% GAME
+DPI = 200
+FIGSIZE = (10,10)
+
 # Initiate pygame
 pygame.init() 
 # clock = pygame.time.Clock()
+SCREEN_SIZE = 800 #screen height and width
+W = SCREEN_SIZE 
+H = SCREEN_SIZE 
 
 # Establish the screen 
 pygame.display.set_caption("INEQUALITIES") #title of screen
@@ -791,7 +805,7 @@ while running:
         draw_score(screen, str(score), 5,5)
         # Draw the permanent image of the 'no valid region' sign
         draw_no_valid_region_rect(screen, no_valid_button_rect)
-        # valid_button.draw_answer(coords_a, coords_b) #TODO remove this 
+        # valid_button.draw_answer(coords_a, coords_b)
         
         # Exit button
         for event in pygame.event.get():
