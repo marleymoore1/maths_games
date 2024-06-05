@@ -21,7 +21,7 @@ import random
 import os
 
 #%% GLOBALS
-# Define the colours of the game
+# Define the colours of game
 BUTTON_COL = (255,0,0) 
 BUTTON_FLASH_COL = (0,255,0)
 BUTTON_HOVER_COL = (0,0,255)
