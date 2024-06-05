@@ -27,6 +27,13 @@ BUTTON_FLASH_COL = (0,255,0)
 BUTTON_HOVER_COL = (0,0,255)
 NO_VALID_REGION_COL = (135,206,235)
 
+DPI = 200
+FIGSIZE = (10,10)
+
+SCREEN_SIZE = 800 #screen height and width
+W = SCREEN_SIZE 
+H = SCREEN_SIZE 
+
 # Set working directory
 WDR = os.path.dirname(os.path.realpath('inequalities.py'))
 
@@ -252,6 +259,8 @@ def plot_graphs(x_list_a, y_list_a, x_list_b, y_list_b, coefficients_a,
     ax.plot(np.zeros(21), np.arange(-10,11), 'k', linewidth=2)
     
     plt.savefig(WDR + '/PLOT.png')
+    
+    return ax.bbox.extents
     
 #%% ESTABLISHING COORDINATES OF VALID REGION
 def valid_region_coordinates(coefficients, sign):
@@ -494,7 +503,7 @@ def within_bounds(coordinates, input_x, input_y):
    
     return polygon.contains_point(point)
 
-def transform_coords_to_pygame(coordinates):
+def transform_coords_to_pygame(coordinates, bbox_extents):
     """
     Pygame coordinates start from (0,0) in the top left. Bottom right is (W,H)
     Matplotlib pixels start from (0,0) in the bottom left. Top right is (W,H).
@@ -510,12 +519,11 @@ def transform_coords_to_pygame(coordinates):
     coordinates : np.ndarray
     """
     #ax.bbox.extents = array([ 250.,  250., 1800., 1760.]) from matplotlib fig    
-    ax_bbox_extents = [ 250,  250, 1800, 1760]
-    x_scale = (ax_bbox_extents[2]-ax_bbox_extents[0]) / (DPI*FIGSIZE[0])
-    y_scale = (ax_bbox_extents[3]-ax_bbox_extents[1]) / (DPI*FIGSIZE[0])
+    x_scale = (bbox_extents[2]-bbox_extents[0]) / (DPI*FIGSIZE[0])
+    y_scale = (bbox_extents[3]-bbox_extents[1]) / (DPI*FIGSIZE[0])
     
-    x_offset = W * (ax_bbox_extents[0] / (DPI*FIGSIZE[0]))
-    y_offset = H * (ax_bbox_extents[1] / (DPI*FIGSIZE[0]))
+    x_offset = W * (bbox_extents[0] / (DPI*FIGSIZE[0]))
+    y_offset = H * (bbox_extents[1] / (DPI*FIGSIZE[0]))
     
     for i in range(len(coordinates)):
         coordinates[i][0] *= SCREEN_SIZE*x_scale/20
@@ -636,7 +644,8 @@ class button():
         target_rect_b = pygame.Rect(bmin_x, bmin_y, bmax_x - bmin_x, bmax_y - bmin_y)
         alpha_surface_b = pygame.Surface(target_rect_b.size, pygame.SRCALPHA)
         
-        if not within_bounds(coordinates_a, mouse_pos[0], mouse_pos[1]) or not within_bounds(coordinates_b, mouse_position[0], mouse_position[1]):
+        if not within_bounds(coordinates_a, mouse_pos[0], mouse_pos[1])\
+            or not within_bounds(coordinates_b, mouse_pos[0], mouse_pos[1]):
             pygame.draw.polygon(alpha_surface_a, button_colour_alpha,
                                 [(x - amin_x, y - amin_y) for x, y in coordinates_a])
             self.surface.blit(alpha_surface_a, target_rect_a)
@@ -695,17 +704,17 @@ def graphs():
     xsa, ysa = linear_equation(coefs_a)
     xsb, ysb = linear_equation(coefs_b)
     
-    plot_graphs(xsa,ysa, xsb, ysb, coefs_a, coefs_b, symbol_a, symbol_b)
+    extents = plot_graphs(xsa,ysa, xsb, ysb, coefs_a, coefs_b, symbol_a, symbol_b)
     
     # Find coordinates of vertices that define valid region
     coordinates_a = valid_region_coordinates(coefs_a, symbol_a)
     coordinates_a = unique_coordinates(coordinates_a)
-    coordinates_a = transform_coords_to_pygame(coordinates_a)
+    coordinates_a = transform_coords_to_pygame(coordinates_a, extents)
     coordinates_a = tuple(map(tuple, coordinates_a))
     
     coordinates_b = valid_region_coordinates(coefs_b, symbol_b)
     coordinates_b = unique_coordinates(coordinates_b)
-    coordinates_b = transform_coords_to_pygame(coordinates_b)
+    coordinates_b = transform_coords_to_pygame(coordinates_b, extents)
     coordinates_b = tuple(map(tuple, coordinates_b))
     
     return coordinates_a, coordinates_b
@@ -765,77 +774,75 @@ def draw_no_valid_region_rect(surface, coordinates_rect):
     
 
 #%% GAME
-DPI = 200
-FIGSIZE = (10,10)
-
-# Initiate pygame
-pygame.init() 
-# clock = pygame.time.Clock()
-SCREEN_SIZE = 800 #screen height and width
-W = SCREEN_SIZE 
-H = SCREEN_SIZE 
-
-# Establish the screen 
-pygame.display.set_caption("INEQUALITIES") #title of screen
-screen = pygame.display.set_mode((W, H)) #pygame Surface
-no_valid_button_rect = (570,735,150,30)
-valid_button = button(screen) #initiate button class
-
-# Set start score
-score = 0
-
-# Main loop
-running = True
-
-while running:
-    pygame.time.delay(10)
-    complete = False 
-    # Plot a random inequality and calculate the vertices of the valid region
-    coords_a, coords_b = graphs()
+def main():
+    # Initiate pygame
+    pygame.init() 
+    # clock = pygame.time.Clock()
     
-    # Check to see if there's a valid region; the "valid polygons" intersect
-    is_valid = valid_region_on_graph(coords_a, coords_b)
-    graph_image = pygame.image.load('PLOT.png') #loads the graph as an image
-    graph_image = pygame.transform.scale(graph_image, (800, 800))
-
     
-    while not complete and running:
-        # Set screen and score
-        screen.blit(graph_image, (0, 0))
-        draw_score(screen, str(score), 5,5)
-        # Draw the permanent image of the 'no valid region' sign
-        draw_no_valid_region_rect(screen, no_valid_button_rect)
-        # valid_button.draw_answer(coords_a, coords_b)
+    # Establish the screen 
+    pygame.display.set_caption("INEQUALITIES") #title of screen
+    screen = pygame.display.set_mode((W, H)) #pygame Surface
+    no_valid_button_rect = (int(0.71*SCREEN_SIZE),int(0.92*SCREEN_SIZE),
+                            int(0.2*SCREEN_SIZE),int(0.04*SCREEN_SIZE))
+    valid_button = button(screen) #initiate button class
+    
+    # Set start score
+    score = 0
+    
+    # Main loop
+    running = True
+    
+    while running:
+        pygame.time.delay(10)
+        complete = False 
+        # Plot a random inequality and calculate the vertices of the valid region
+        coords_a, coords_b = graphs()
         
-        # Exit button
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-               running = False 
-               
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_position = pygame.mouse.get_pos() 
-                
-                # Draw the valid region buttons including the 'no valid region' button
-                if is_valid:
-                    if valid_button.draw_valid_region_button(coords_a, coords_b, mouse_position):
-                        score += 1
-                        complete = True
+        # Check to see if there's a valid region; the "valid polygons" intersect
+        is_valid = valid_region_on_graph(coords_a, coords_b)
+        graph_image = pygame.image.load('PLOT.png') #loads the graph as an image
+        graph_image = pygame.transform.scale(graph_image, (SCREEN_SIZE, SCREEN_SIZE))
+    
+        
+        while not complete and running:
+            # Set screen and score
+            screen.blit(graph_image, (0, 0))
+            draw_score(screen, str(score), 5,5)
+            # Draw the permanent image of the 'no valid region' sign
+            draw_no_valid_region_rect(screen, no_valid_button_rect)
+            # valid_button.draw_answer(coords_a, coords_b)
+            
+            # Exit button
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                   running = False 
+                   
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_position = pygame.mouse.get_pos() 
+                    
+                    # Draw the valid region buttons including the 'no valid region' button
+                    if is_valid:
+                        if valid_button.draw_valid_region_button(coords_a, coords_b, mouse_position):
+                            score += 1
+                            complete = True
+                        
+                        else:
+                            score -= 1
+                            complete = True
                     
                     else:
-                        score -= 1
-                        complete = True
-                
-                else:
-                    if valid_button.draw_no_valid_region_button(no_valid_button_rect, mouse_position):
-                        score += 1
-                        complete = True
-                    
-                    else:
-                        score -= 1
-                        complete = True
-        
+                        if valid_button.draw_no_valid_region_button(no_valid_button_rect, mouse_position):
+                            score += 1
+                            complete = True
+                        
+                        else:
+                            score -= 1
+                            complete = True
+                  
+            pygame.display.update()
+    
+    pygame.quit()    
 
-              
-        pygame.display.update()
-
-pygame.quit()    
+if __name__ == '__main__':
+    main()
